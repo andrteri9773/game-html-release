@@ -26,6 +26,8 @@ const ui = {
   levelKicker: document.querySelector('#level-kicker'),
   missionCopy: document.querySelector('#mission-copy'),
   levelCards: [...document.querySelectorAll('[data-level]')],
+  leaderboardList: document.querySelector('#leaderboard-list'),
+  playerRank: document.querySelector('#player-rank'),
   reticle: document.querySelector('#reticle'),
   webMeter: document.querySelector('#web-meter'),
   breakMeter: document.querySelector('#break-meter'),
@@ -51,6 +53,14 @@ ui.inputHint.textContent = isTouchDevice
   : 'Нажмите Esc, чтобы освободить курсор';
 
 const levelOrder = ['queens', 'manhattan', 'rift', 'industrial', 'skyline', 'core'];
+const leaderboardRivals = {
+  queens: [['NOVA', 38.42], ['BYTE', 46.18], ['LUMA', 57.63], ['ROOK', 72.1], ['PIXEL', 94.55]],
+  manhattan: [['VOLT', 49.7], ['NOVA', 61.25], ['GLITCH', 74.8], ['BYTE', 91.4], ['ROOK', 118.2]],
+  rift: [['LUMA', 43.95], ['VOLT', 55.4], ['PIXEL', 68.7], ['NOVA', 84.2], ['GLITCH', 109.6]],
+  industrial: [['BYTE', 69.3], ['VOLT', 84.8], ['ROOK', 103.2], ['LUMA', 127.9], ['PIXEL', 158.4]],
+  skyline: [['NOVA', 76.1], ['GLITCH', 93.6], ['VOLT', 116.5], ['BYTE', 143.8], ['ROOK', 179.2]],
+  core: [['LUMA', 106.4], ['NOVA', 132.8], ['VOLT', 164.3], ['GLITCH', 207.5], ['PIXEL', 258.9]],
+};
 const levelConfigs = {
   queens: {
     number: '01',
@@ -1043,6 +1053,42 @@ function updateLevelMenu() {
       bestLabel.textContent = locked ? 'ЗАКРЫТО' : (levelBest ? formatTime(levelBest.time) : 'НЕ ПРОЙДЕН');
     }
   });
+  updateLeaderboard();
+}
+
+function getLeaderboard(levelId) {
+  const entries = (leaderboardRivals[levelId] || []).map(([name, time]) => ({ name, time, player: false }));
+  const playerBest = campaignState.best[levelId]?.time;
+  if (Number.isFinite(playerBest)) entries.push({ name: 'ВЫ', time: playerBest, player: true });
+  entries.sort((left, right) => left.time - right.time);
+  return {
+    entries,
+    playerRank: Number.isFinite(playerBest) ? entries.findIndex((entry) => entry.player) + 1 : null,
+  };
+}
+
+function updateLeaderboard() {
+  const { entries, playerRank } = getLeaderboard(selectedLevelId);
+  const visible = entries.slice(0, 3);
+  if (playerRank && playerRank > 3) visible.push(entries[playerRank - 1]);
+  else if (playerRank) visible.push(entries.find((entry, index) => index >= 3 && !entry.player) || entries[playerRank - 1]);
+  else visible.push({ name: 'ВЫ', time: null, player: true });
+
+  ui.leaderboardList.replaceChildren();
+  visible.forEach((entry) => {
+    const rank = entry.time === null ? null : entries.indexOf(entry) + 1;
+    const item = document.createElement('li');
+    item.classList.toggle('player', entry.player);
+    const rankLabel = document.createElement('b');
+    rankLabel.textContent = rank ? `#${rank}` : '#—';
+    const name = document.createElement('span');
+    name.textContent = entry.name;
+    const time = document.createElement('time');
+    time.textContent = entry.time === null ? 'НЕТ РЕЗУЛЬТАТА' : formatTime(entry.time);
+    item.append(rankLabel, name, time);
+    ui.leaderboardList.append(item);
+  });
+  ui.playerRank.textContent = playerRank ? `ВАШЕ МЕСТО #${playerRank}` : 'ВАШЕ МЕСТО —';
 }
 
 function selectLevel(levelId) {
@@ -1227,7 +1273,10 @@ function finishRun() {
   updateLevelMenu();
   ui.resultTitle.textContent = `${activeLevel.name} ЗАВЕРШЁН`;
   ui.resultTime.textContent = formatTime(elapsed);
-  ui.resultRecord.textContent = isRecord ? 'Новый рекорд' : `Рекорд ${formatTime(best.time)}`;
+  const placement = getLeaderboard(selectedLevelId).playerRank;
+  ui.resultRecord.textContent = isRecord
+    ? `Новый рекорд · место #${placement}`
+    : `Рекорд ${formatTime(best.time)} · место #${placement}`;
   ui.nextLevel.hidden = levelIndex >= levelOrder.length - 1;
   ui.result.hidden = false;
 }

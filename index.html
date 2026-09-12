@@ -108,6 +108,13 @@
             <small>РАЙОН 06</small><b>Ядро</b><span>9 колец</span><i data-level-best="core">ЗАКРЫТО</i>
           </button>
         </div>
+        <section class="leaderboard" aria-label="Таблица лидеров выбранного района">
+          <header>
+            <span>ТАБЛИЦА ПИЛОТОВ</span>
+            <b id="player-rank">ВАШЕ МЕСТО —</b>
+          </header>
+          <ol id="leaderboard-list"></ol>
+        </section>
         <div class="character-select" role="group" aria-label="Выбор персонажа">
           <button class="character-card selected" type="button" data-character="scout">
             <img src="./assets/images/characters/character-a.png" alt="" />
@@ -122,8 +129,10 @@
             <span><b>Вектор</b><small>+25% к тяге</small></span>
           </button>
         </div>
-        <button id="play" type="button">Войти в разлом <span>→</span></button>
-        <p id="input-hint" class="warning">Нажмите Esc, чтобы освободить курсор</p>
+        <div class="start-actions">
+          <button id="play" type="button">Войти в разлом <span>→</span></button>
+          <p id="input-hint" class="warning">Нажмите Esc, чтобы освободить курсор</p>
+        </div>
       </section>
 
       <section id="result" class="result" hidden>
