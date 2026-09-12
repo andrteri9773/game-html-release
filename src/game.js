@@ -25,6 +25,11 @@ const ui = {
   levelMenu: document.querySelector('#level-menu'),
   levelKicker: document.querySelector('#level-kicker'),
   missionCopy: document.querySelector('#mission-copy'),
+  levelPicker: document.querySelector('#level-picker'),
+  selectedLevelNumber: document.querySelector('#selected-level-number'),
+  selectedLevelName: document.querySelector('#selected-level-name'),
+  selectedLevelMode: document.querySelector('#selected-level-mode'),
+  selectedLevelBest: document.querySelector('#selected-level-best'),
   levelCards: [...document.querySelectorAll('[data-level]')],
   leaderboardList: document.querySelector('#leaderboard-list'),
   playerRank: document.querySelector('#player-rank'),
@@ -86,7 +91,7 @@ const levelConfigs = {
     start: [31, 39.4, 5],
     portal: [-30, .8, 8],
     citizen: [30, 39.8, 5],
-    route: [[19, 17.6, 1], [8, 28.2, -8], [-12, 17.2, -2], [-30, 1, 8]],
+    route: [[19, 19.4, 1], [8, 28.2, -8], [-12, 17.2, -2], [-30, 1, 8]],
     sky: 0x7585a6,
     fog: 0x697999,
     rift: 0xff4b1f,
@@ -102,7 +107,7 @@ const levelConfigs = {
     start: [-30, 1, 8],
     portal: [30, 40.2, 5],
     citizen: [30, 39.8, 5],
-    route: [[-12, 17.2, -2], [-1, 7.6, 5], [8, 28.2, -8], [19, 17.6, 1], [30, 40.2, 5]],
+    route: [[-12, 17.2, -2], [-1, 7.6, 5], [8, 28.2, -8], [19, 19.4, 1], [30, 40.2, 5]],
     sky: 0x765b7f,
     fog: 0x604966,
     rift: 0xff4b1f,
@@ -114,7 +119,7 @@ const levelConfigs = {
     number: '04', name: 'ПРОМЗОНА', kind: 'relay',
     description: 'Восстановите шесть узлов, меняя высоту и направление движения.',
     start: [-30, 1, 8], portal: [31, 39.4, 5], citizen: [30, 39.8, 5],
-    route: [[-12, 16.7, -2], [-1, 7, 5], [8, 26.5, -8], [19, 17, 1], [31, 39.4, 5], [-30, 1, 8]],
+    route: [[-12, 16.7, -2], [-1, 7, 5], [8, 26.5, -8], [19, 19.4, 1], [31, 39.4, 5], [-30, 1, 8]],
     sky: 0x8a8175, fog: 0x756d62, rift: 0xff4b1f, sun: 0xffc76d, checkpointRadius: 3.5, fallPenalty: 5,
   },
   skyline: {
@@ -128,7 +133,7 @@ const levelConfigs = {
     number: '06', name: 'ЯДРО РАЗЛОМА', kind: 'race',
     description: 'Финальный маршрут из девяти колец с резкими разворотами и перепадами высоты.',
     start: [31, 39.4, 5], portal: [-30, .8, 8], citizen: [30, 39.8, 5],
-    route: [[19, 17, 1], [8, 26.5, -8], [-1, 7, 5], [-12, 16.7, -2], [-30, 1, 8], [-1, 7, 5], [19, 17, 1], [8, 26.5, -8], [31, 39.4, 5]],
+    route: [[19, 19.4, 1], [8, 26.5, -8], [-1, 7, 5], [-12, 16.7, -2], [-30, 1, 8], [-1, 7, 5], [19, 19.4, 1], [8, 26.5, -8], [31, 39.4, 5]],
     sky: 0x4c3b58, fog: 0x3f324b, rift: 0xff4b1f, sun: 0xff9a66, checkpointRadius: 2.8, fallPenalty: 8,
   },
 };
@@ -1053,6 +1058,12 @@ function updateLevelMenu() {
       bestLabel.textContent = locked ? 'ЗАКРЫТО' : (levelBest ? formatTime(levelBest.time) : 'НЕ ПРОЙДЕН');
     }
   });
+  const selectedCard = ui.levelCards.find((card) => card.dataset.level === selectedLevelId);
+  const selectedBest = campaignState.best[selectedLevelId];
+  ui.selectedLevelNumber.textContent = `РАЙОН ${activeLevel.number}`;
+  ui.selectedLevelName.textContent = activeLevel.name;
+  ui.selectedLevelMode.textContent = selectedCard?.querySelector('span')?.textContent || '';
+  ui.selectedLevelBest.textContent = selectedBest ? formatTime(selectedBest.time) : 'НЕ ПРОЙДЕН';
   updateLeaderboard();
 }
 
@@ -1216,8 +1227,14 @@ function resetRun(lockPointer = !isTouchDevice) {
   player.previous.copy(player.position);
   player.velocity.set(0, 0, 0);
   player.wallRunTime = 0;
-  yaw = -.7;
-  pitch = -.12;
+  const firstTarget = routeTargets[0] || citizen.position;
+  const targetOffset = firstTarget.clone().sub(player.position);
+  yaw = Math.atan2(-targetOffset.x, -targetOffset.z);
+  pitch = THREE.MathUtils.clamp(
+    -Math.atan2(targetOffset.y, Math.hypot(targetOffset.x, targetOffset.z)),
+    -1.2,
+    .58,
+  );
   rescued = false;
   completed = false;
   elapsed = 0;
@@ -1941,7 +1958,10 @@ function animate() {
 }
 
 ui.play.addEventListener('click', startGame);
-ui.levelCards.forEach((card) => card.addEventListener('click', () => selectLevel(card.dataset.level)));
+ui.levelCards.forEach((card) => card.addEventListener('click', () => {
+  selectLevel(card.dataset.level);
+  if (!card.disabled) ui.levelPicker.open = false;
+}));
 ui.characterCards.forEach((card) => card.addEventListener('click', () => selectCharacter(card.dataset.character)));
 ui.restart.addEventListener('click', () => resetRun(!isTouchDevice));
 ui.nextLevel.addEventListener('click', startNextLevel);

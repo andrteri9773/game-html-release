@@ -88,26 +88,34 @@
         <p id="level-kicker" class="kicker">РАЙОН 01 // КВИНС</p>
         <h1>Кубический<br /><em>разлом</em></h1>
         <p id="mission-copy" class="mission">Сигнал с крыши третьей башни. Заберите жителя и вернитесь к порталу.</p>
-        <div class="level-select" role="group" aria-label="Выбор района">
-          <button class="level-card selected" type="button" data-level="queens">
-            <small>РАЙОН 01</small><b>Квинс</b><span>Спасение</span><i data-level-best="queens">--:--.---</i>
-          </button>
-          <button class="level-card locked" type="button" data-level="manhattan">
-            <small>РАЙОН 02</small><b>Манхэттен</b><span>Энергосеть</span><i data-level-best="manhattan">ЗАКРЫТО</i>
-          </button>
-          <button class="level-card locked" type="button" data-level="rift">
-            <small>РАЙОН 03</small><b>Разлом</b><span>Гонка</span><i data-level-best="rift">ЗАКРЫТО</i>
-          </button>
-          <button class="level-card locked" type="button" data-level="industrial">
-            <small>РАЙОН 04</small><b>Промзона</b><span>6 узлов</span><i data-level-best="industrial">ЗАКРЫТО</i>
-          </button>
-          <button class="level-card locked" type="button" data-level="skyline">
-            <small>РАЙОН 05</small><b>Небоскрёбы</b><span>7 колец</span><i data-level-best="skyline">ЗАКРЫТО</i>
-          </button>
-          <button class="level-card locked" type="button" data-level="core">
-            <small>РАЙОН 06</small><b>Ядро</b><span>9 колец</span><i data-level-best="core">ЗАКРЫТО</i>
-          </button>
-        </div>
+        <details id="level-picker" class="level-picker">
+          <summary>
+            <span class="level-picker-label">ВЫБРАННЫЙ РАЙОН</span>
+            <strong><small id="selected-level-number">РАЙОН 01</small><b id="selected-level-name">КВИНС</b></strong>
+            <span id="selected-level-mode" class="level-picker-mode">СПАСЕНИЕ</span>
+            <i id="selected-level-best">НЕ ПРОЙДЕН</i>
+          </summary>
+          <div class="level-select" role="group" aria-label="Выбор района">
+            <button class="level-card selected" type="button" data-level="queens">
+              <small>РАЙОН 01</small><b>Квинс</b><span>Спасение</span><i data-level-best="queens">--:--.---</i>
+            </button>
+            <button class="level-card locked" type="button" data-level="manhattan">
+              <small>РАЙОН 02</small><b>Манхэттен</b><span>Энергосеть</span><i data-level-best="manhattan">ЗАКРЫТО</i>
+            </button>
+            <button class="level-card locked" type="button" data-level="rift">
+              <small>РАЙОН 03</small><b>Разлом</b><span>Гонка</span><i data-level-best="rift">ЗАКРЫТО</i>
+            </button>
+            <button class="level-card locked" type="button" data-level="industrial">
+              <small>РАЙОН 04</small><b>Промзона</b><span>6 узлов</span><i data-level-best="industrial">ЗАКРЫТО</i>
+            </button>
+            <button class="level-card locked" type="button" data-level="skyline">
+              <small>РАЙОН 05</small><b>Небоскрёбы</b><span>7 колец</span><i data-level-best="skyline">ЗАКРЫТО</i>
+            </button>
+            <button class="level-card locked" type="button" data-level="core">
+              <small>РАЙОН 06</small><b>Ядро</b><span>9 колец</span><i data-level-best="core">ЗАКРЫТО</i>
+            </button>
+          </div>
+        </details>
         <section class="leaderboard" aria-label="Таблица лидеров выбранного района">
           <header>
             <span>ТАБЛИЦА ПИЛОТОВ</span>
