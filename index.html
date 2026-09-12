@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#f2b83f" />
+    <title>Кубический разлом</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <main id="game" aria-label="Кубический разлом">
+      <div id="canvas-root"></div>
+
+      <div class="hud muted" aria-live="polite">
+        <section class="objective-panel">
+          <span id="objective-label" class="eyebrow">СИГНАЛ БЕДСТВИЯ</span>
+          <strong id="objective">Доберитесь до жителя</strong>
+          <div class="progress-track"><i id="objective-progress"></i></div>
+        </section>
+
+        <section class="time-panel">
+          <span id="timer">00:00.000</span>
+          <small>ЛУЧШЕЕ <b id="best-time">--:--.---</b></small>
+        </section>
+
+        <section class="telemetry-panel">
+          <div><span>СКОРОСТЬ</span><b id="speed">0</b><small> км/ч</small></div>
+          <div><span>ИНВЕНТАРЬ</span><b id="anchor-state">Якорь: 8</b></div>
+        </section>
+
+        <div id="reticle" class="reticle"><i></i><i></i><i></i><i></i></div>
+        <div id="web-meter" class="web-meter"><span></span></div>
+        <div id="break-meter" class="break-meter"><span></span></div>
+        <div id="objective-marker" class="objective-marker">
+          <span><i>!</i></span>
+          <b id="objective-distance">0 м</b>
+        </div>
+
+        <div class="block-palette" role="group" aria-label="Тип блока">
+          <button class="block-choice selected" type="button" data-block="anchor" title="Паутинный якорь">
+            <i class="anchor-swatch"></i><span><b>1</b> ЯКОРЬ</span>
+          </button>
+          <button class="block-choice" type="button" data-block="spring" title="Пружинная панель">
+            <i class="spring-swatch"></i><span><b>2</b> ПРУЖИНА</span>
+          </button>
+          <button class="block-choice" type="button" data-block="beacon" title="Маяк возврата">
+            <i class="beacon-swatch"></i><span><b>3</b> МАЯК</span>
+          </button>
+          <button class="block-choice" type="button" data-block="brick" title="Кирпичный блок">
+            <i class="brick-swatch"></i><span><b>4</b> КИРПИЧ</span>
+          </button>
+          <button class="block-choice" type="button" data-block="concrete" title="Бетонный блок">
+            <i class="concrete-swatch"></i><span><b>5</b> БЕТОН</span>
+          </button>
+          <button class="block-choice" type="button" data-block="metal" title="Металлический блок">
+            <i class="metal-swatch"></i><span><b>6</b> МЕТАЛЛ</span>
+          </button>
+          <button class="block-choice" type="button" data-block="earth" title="Блок земли">
+            <i class="earth-swatch"></i><span><b>7</b> ЗЕМЛЯ</span>
+          </button>
+        </div>
+
+        <aside id="toast" class="toast"></aside>
+        <aside id="help" class="help-bar">
+          <span><kbd>WASD</kbd> движение</span>
+          <span><kbd>ПРОБЕЛ</kbd> прыжок</span>
+          <span><kbd>ЛКМ</kbd> паутина</span>
+          <span><kbd>SHIFT</kbd> подтянуться</span>
+          <span><kbd>E</kbd> блок</span>
+          <span><kbd>Q</kbd> удерживать: ломать</span>
+          <span><kbd>1–7</kbd> блок</span>
+          <span><kbd>R</kbd> заново</span>
+        </aside>
+
+        <div id="mobile-controls" class="mobile-controls" aria-label="Сенсорное управление">
+          <div id="move-pad" class="move-pad" aria-label="Движение">
+            <span id="move-knob"></span>
+          </div>
+          <button id="mobile-pull" class="mobile-action mobile-pull" type="button"><b>⇈</b><small>ТЯНУТЬ</small></button>
+          <button id="mobile-restart" class="mobile-restart" type="button" aria-label="Начать заново">↻</button>
+          <div class="mobile-actions">
+            <button id="mobile-anchor" class="mobile-action secondary" type="button"><b>＋</b><small>БЛОК</small></button>
+            <button id="mobile-remove" class="mobile-action secondary remove" type="button"><b>−</b><small>ЛОМАТЬ</small></button>
+            <button id="mobile-jump" class="mobile-action" type="button"><b>↑</b><small>ПРЫЖОК</small></button>
+            <button id="mobile-web" class="mobile-action web" type="button"><b>◎</b><small>ПАУТИНА</small></button>
+          </div>
+        </div>
+      </div>
+
+      <section id="start-screen" class="start-screen">
+        <div class="brand-mark" aria-hidden="true"><span></span></div>
+        <p id="level-kicker" class="kicker">РАЙОН 01 // КВИНС</p>
+        <h1>Кубический<br /><em>разлом</em></h1>
+        <p id="mission-copy" class="mission">Сигнал с крыши третьей башни. Заберите жителя и вернитесь к маяку.</p>
+        <div class="level-select" role="group" aria-label="Выбор района">
+          <button class="level-card selected" type="button" data-level="queens">
+            <small>РАЙОН 01</small><b>Квинс</b><span>Спасение</span><i data-level-best="queens">--:--.---</i>
+          </button>
+          <button class="level-card locked" type="button" data-level="manhattan">
+            <small>РАЙОН 02</small><b>Манхэттен</b><span>Энергосеть</span><i data-level-best="manhattan">ЗАКРЫТО</i>
+          </button>
+          <button class="level-card locked" type="button" data-level="rift">
+            <small>РАЙОН 03</small><b>Разлом</b><span>Гонка</span><i data-level-best="rift">ЗАКРЫТО</i>
+          </button>
+        </div>
+        <div class="character-select" role="group" aria-label="Выбор персонажа">
+          <button class="character-card selected" type="button" data-character="scout">
+            <img src="./assets/images/characters/character-a.png" alt="" />
+            <span><b>Скаут</b><small>+12% к скорости</small></span>
+          </button>
+          <button class="character-card" type="button" data-character="bastion">
+            <img src="./assets/images/characters/character-h.png" alt="" />
+            <span><b>Бастион</b><small>12 блоков</small></span>
+          </button>
+          <button class="character-card" type="button" data-character="vector">
+            <img src="./assets/images/characters/character-q.png" alt="" />
+            <span><b>Вектор</b><small>+25% к тяге</small></span>
+          </button>
+        </div>
+        <button id="play" type="button">Войти в разлом <span>→</span></button>
+        <p id="input-hint" class="warning">Нажмите Esc, чтобы освободить курсор</p>
+      </section>
+
+      <section id="result" class="result" hidden>
+        <p id="result-title">МАРШРУТ ЗАВЕРШЁН</p>
+        <h2 id="result-time">00:00.000</h2>
+        <strong id="result-record">Новый рекорд</strong>
+        <div class="result-actions">
+          <button id="restart" type="button">Ещё попытка <span>↻</span></button>
+          <button id="next-level" type="button">Следующий район <span>→</span></button>
+          <button id="level-menu" class="secondary-command" type="button">Выбор районов <span>⌂</span></button>
+        </div>
+      </section>
+
+      <div id="damage-flash" class="damage-flash"></div>
+      <div class="rotate-device" role="status">
+        <span aria-hidden="true">↻</span>
+        <strong>Поверните устройство</strong>
+        <small>Игра работает в горизонтальном режиме</small>
+      </div>
+    </main>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="./src/game.js"></script>
+  </body>
+</html>
