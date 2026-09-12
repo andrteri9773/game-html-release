@@ -208,6 +208,31 @@ h1 em { color: var(--danger); font-style: italic; }
 .damage-flash { position: absolute; z-index: 7; inset: 0; pointer-events: none; border: 0 solid var(--danger); opacity: 0; transition: .35s; }
 .damage-flash.show { border-width: 14px; opacity: .75; transition: 0s; }
 
+@media (min-width: 1120px) and (max-height: 850px) {
+  .start-screen {
+    display: grid;
+    grid-template-columns: minmax(390px, .82fr) minmax(560px, 1.18fr);
+    grid-template-areas:
+      'kicker levels'
+      'title levels'
+      'mission leaderboard'
+      '. characters';
+    grid-template-rows: auto auto auto auto;
+    align-content: center;
+    column-gap: clamp(32px, 5vw, 84px);
+    padding: 18px 40px 90px clamp(40px, 6vw, 96px);
+  }
+  .start-screen .brand-mark { display: none; }
+  .start-screen .kicker { grid-area: kicker; align-self: end; }
+  .start-screen h1 { grid-area: title; align-self: start; font-size: clamp(66px, 7.2vw, 104px); line-height: .78; }
+  .start-screen .mission { grid-area: mission; align-self: start; max-width: 500px; margin: 24px 0 0; font-size: 20px; }
+  .start-screen .level-select { grid-area: levels; align-self: end; width: 100%; margin-bottom: 10px; }
+  .start-screen .leaderboard { grid-area: leaderboard; width: 100%; margin-bottom: 10px; }
+  .start-screen .character-select { grid-area: characters; width: 100%; margin-bottom: 0; }
+  .start-screen .character-card { width: 100%; }
+  .start-actions { min-height: 72px; }
+}
+
 @media (max-width: 760px) {
   .telemetry-panel { top: 98px; right: 10px; bottom: auto; }
   .telemetry-panel div { min-width: 76px; padding: 7px 9px; }
