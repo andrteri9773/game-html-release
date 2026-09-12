@@ -9,7 +9,7 @@
 | Kenney City Kit Commercial 2.1 | https://kenney.nl/assets/city-kit-commercial | CC0 1.0 | Пять моделей городского окружения |
 | Kenney City Kit Roads 2.1 | https://kenney.nl/assets/city-kit-roads | CC0 1.0 | Дороги, фонари, светофоры и знаки |
 | Kenney Car Kit 3.1 | https://kenney.nl/assets/car-kit | CC0 1.0 | Такси, седан, полиция, фургон и доставка |
-| Kenney Prototype Kit 1.0 | https://kenney.nl/assets/prototype-kit | CC0 1.0 | Оболочки блоков, якорь, пружинная панель и маяк |
+| Kenney Prototype Kit 1.0 | https://kenney.nl/assets/prototype-kit | CC0 1.0 | Референсы и исходные модели прототипирования |
 
 Геометрия героя, города, NPC и интерфейс прототипа созданы специально для проекта и не используют извлечённые ассеты коммерческих игр.
 

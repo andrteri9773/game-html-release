@@ -50,7 +50,7 @@ ui.inputHint.textContent = isTouchDevice
   ? 'Левый стик — движение, свайп по экрану — камера'
   : 'Нажмите Esc, чтобы освободить курсор';
 
-const levelOrder = ['queens', 'manhattan', 'rift'];
+const levelOrder = ['queens', 'manhattan', 'rift', 'industrial', 'skyline', 'core'];
 const levelConfigs = {
   queens: {
     number: '01',
@@ -65,20 +65,24 @@ const levelConfigs = {
     fog: 0x90cfe4,
     rift: 0xff4b1f,
     sun: 0xfff0ca,
+    checkpointRadius: 4.5,
+    fallPenalty: 3,
   },
   manhattan: {
     number: '02',
     name: 'МАНХЭТТЕН',
     kind: 'relay',
     description: 'Активируйте четыре энергетических узла, двигаясь с крыш обратно к Квинсу.',
-    start: [31, 3.7, 5],
+    start: [31, 39.4, 5],
     portal: [-30, .8, 8],
     citizen: [30, 39.8, 5],
     route: [[19, 17.6, 1], [8, 28.2, -8], [-12, 17.2, -2], [-30, 1, 8]],
     sky: 0x7585a6,
     fog: 0x697999,
-    rift: 0x4ce0c1,
+    rift: 0xff4b1f,
     sun: 0xffd28a,
+    checkpointRadius: 4.2,
+    fallPenalty: 3,
   },
   rift: {
     number: '03',
@@ -91,18 +95,42 @@ const levelConfigs = {
     route: [[-12, 17.2, -2], [-1, 7.6, 5], [8, 28.2, -8], [19, 17.6, 1], [30, 40.2, 5]],
     sky: 0x765b7f,
     fog: 0x604966,
-    rift: 0xff5f86,
+    rift: 0xff4b1f,
     sun: 0xffb86b,
+    checkpointRadius: 3.8,
+    fallPenalty: 4,
+  },
+  industrial: {
+    number: '04', name: 'ПРОМЗОНА', kind: 'relay',
+    description: 'Восстановите шесть узлов, меняя высоту и направление движения.',
+    start: [-30, 1, 8], portal: [31, 39.4, 5], citizen: [30, 39.8, 5],
+    route: [[-12, 16.7, -2], [-1, 7, 5], [8, 26.5, -8], [19, 17, 1], [31, 39.4, 5], [-30, 1, 8]],
+    sky: 0x8a8175, fog: 0x756d62, rift: 0xff4b1f, sun: 0xffc76d, checkpointRadius: 3.5, fallPenalty: 5,
+  },
+  skyline: {
+    number: '05', name: 'НЕБОСКРЁБЫ', kind: 'race',
+    description: 'Пройдите семь колец без падений через весь вертикальный город.',
+    start: [-30, 1, 8], portal: [31, 39.4, 5], citizen: [30, 39.8, 5],
+    route: [[-12, 16.7, -2], [-1, 7, 5], [8, 26.5, -8], [19, 17, 1], [31, 39.4, 5], [8, 26.5, -8], [-30, 1, 8]],
+    sky: 0x617d9e, fog: 0x546f8d, rift: 0xff4b1f, sun: 0xffe0a0, checkpointRadius: 3.2, fallPenalty: 6,
+  },
+  core: {
+    number: '06', name: 'ЯДРО РАЗЛОМА', kind: 'race',
+    description: 'Финальный маршрут из девяти колец с резкими разворотами и перепадами высоты.',
+    start: [31, 39.4, 5], portal: [-30, .8, 8], citizen: [30, 39.8, 5],
+    route: [[19, 17, 1], [8, 26.5, -8], [-1, 7, 5], [-12, 16.7, -2], [-30, 1, 8], [-1, 7, 5], [19, 17, 1], [8, 26.5, -8], [31, 39.4, 5]],
+    sky: 0x4c3b58, fog: 0x3f324b, rift: 0xff4b1f, sun: 0xff9a66, checkpointRadius: 2.8, fallPenalty: 8,
   },
 };
 
-let campaignState = { unlocked: 1, completed: {}, best: {} };
+let campaignState = { unlocked: 1, completed: {}, best: {}, tutorialComplete: false };
 try {
   const savedCampaign = JSON.parse(localStorage.getItem('cubic-rift-campaign') || '{}');
   campaignState = {
     unlocked: Math.max(1, Math.min(levelOrder.length, Number(savedCampaign.unlocked) || 1)),
     completed: savedCampaign.completed || {},
     best: savedCampaign.best || {},
+    tutorialComplete: Boolean(savedCampaign.tutorialComplete || localStorage.getItem('cubic-rift-tutorial-complete')),
   };
 } catch {
   // Invalid campaign data falls back to a fresh save.
@@ -222,8 +250,6 @@ const materials = {
   roof: new THREE.MeshStandardMaterial({ color: 0x272b31, roughness: .8 }),
   grass: new THREE.MeshStandardMaterial({ color: 0x52985a, roughness: 1 }),
   signal: new THREE.MeshStandardMaterial({ color: 0xf2b83f, emissive: 0x6f3900, emissiveIntensity: 1.3 }),
-  spring: new THREE.MeshStandardMaterial({ color: 0x46d5f2, emissive: 0x07516c, emissiveIntensity: 1.2 }),
-  beacon: new THREE.MeshStandardMaterial({ color: 0xe63e36, emissive: 0x681412, emissiveIntensity: 1.2 }),
   metal: new THREE.MeshStandardMaterial({ color: 0xffffff, map: blockTextures.metal, roughness: .32, metalness: .62 }),
   earth: [earthSideMaterial, earthSideMaterial, earthTopMaterial, earthSideMaterial, earthSideMaterial, earthSideMaterial],
   windowBlock: new THREE.MeshStandardMaterial({ color: 0x60b8d2, roughness: .18, metalness: .25, emissive: 0x153f50, emissiveIntensity: .45 }),
@@ -277,8 +303,6 @@ scene.add(riftGlow);
 
 const blockTypes = {
   anchor: { name: 'Якорь', placed: 'Якорь установлен', material: materials.signal, device: true },
-  spring: { name: 'Пружина', placed: 'Пружина установлена', material: materials.spring, device: true },
-  beacon: { name: 'Маяк', placed: 'Маяк установлен', material: materials.beacon, device: true },
   brick: { name: 'Кирпич', placed: 'Кирпичный блок установлен', mined: 'Кирпич добыт', material: materials.brick },
   concrete: { name: 'Бетон', placed: 'Бетонный блок установлен', mined: 'Бетон добыт', material: materials.concrete },
   metal: { name: 'Металл', placed: 'Металлический блок установлен', mined: 'Металл добыт', material: materials.metal },
@@ -552,12 +576,45 @@ const cityAssetSpecs = [
 const cityColliderMaterial = new THREE.MeshBasicMaterial({ visible: false });
 
 const blockAssetSpecs = {
-  anchor: '../devices/target-b-round.glb',
-  spring: '../devices/button-floor-square.glb',
-  beacon: '../devices/flag.glb',
 };
 
+function createWebAnchorVisual(size) {
+  const group = new THREE.Group();
+  group.name = 'asset-shell';
+  const material = new THREE.LineBasicMaterial({ color: 0xf7fbff, transparent: true, opacity: .95 });
+  const createPlane = (rotation) => {
+    const points = [];
+    const radius = size * .47;
+    for (let spoke = 0; spoke < 8; spoke += 1) {
+      const angle = spoke / 8 * Math.PI * 2;
+      points.push(new THREE.Vector3(0, 0, 0), new THREE.Vector3(Math.cos(angle) * radius, Math.sin(angle) * radius, 0));
+    }
+    for (const ringScale of [.34, .66, 1]) {
+      for (let segment = 0; segment < 8; segment += 1) {
+        const a = segment / 8 * Math.PI * 2;
+        const b = (segment + 1) / 8 * Math.PI * 2;
+        points.push(
+          new THREE.Vector3(Math.cos(a) * radius * ringScale, Math.sin(a) * radius * ringScale, 0),
+          new THREE.Vector3(Math.cos(b) * radius * ringScale, Math.sin(b) * radius * ringScale, 0),
+        );
+      }
+    }
+    const web = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), material);
+    web.rotation.copy(rotation);
+    group.add(web);
+  };
+  createPlane(new THREE.Euler(0, 0, 0));
+  createPlane(new THREE.Euler(0, Math.PI * .5, 0));
+  createPlane(new THREE.Euler(Math.PI * .5, 0, 0));
+  group.add(new THREE.Mesh(new THREE.SphereGeometry(size * .08, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff })));
+  return group;
+}
+
 function decorateBlock(block, blockType) {
+  if (blockType === 'anchor') {
+    if (!block.getObjectByName('asset-shell')) block.add(createWebAnchorVisual(blockSize));
+    return;
+  }
   const template = blockAssetTemplates[blockType];
   if (!template || block.getObjectByName('asset-shell')) return;
   const shell = template.clone(true);
@@ -737,16 +794,16 @@ function addUrbanGreenery() {
   ];
   const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x76543b, roughness: 1 });
   const crownMaterial = new THREE.MeshStandardMaterial({ color: 0x3f8655, roughness: .95 });
-  const trunkGeometry = new THREE.CylinderGeometry(.18, .24, 1.7, 6);
-  const crownGeometry = new THREE.DodecahedronGeometry(1.05, 0);
+  const trunkGeometry = new THREE.CylinderGeometry(.28, .38, 2.7, 6);
+  const crownGeometry = new THREE.DodecahedronGeometry(1.65, 0);
   treePositions.forEach(([x, y, z], index) => {
     const id = `tree-${index}`;
     if (destroyedEnvironment.has(id)) return;
     const tree = new THREE.Group();
     const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-    trunk.position.y = .85;
+    trunk.position.y = 1.35;
     const crown = new THREE.Mesh(crownGeometry, crownMaterial);
-    crown.position.y = 2.05;
+    crown.position.y = 3.25;
     crown.rotation.y = index * .73;
     crown.scale.y = .9 + index % 3 * .08;
     tree.add(trunk, crown);
@@ -940,8 +997,6 @@ let fallCount = 0;
 let jumpQueued = false;
 let routeIndex = 0;
 const respawnPoint = new THREE.Vector3(...activeLevel.start);
-let activeBeacon = null;
-let springCooldown = 0;
 let miningTarget = null;
 let miningProgress = 0;
 let miningActive = false;
@@ -951,7 +1006,7 @@ const tutorialTasks = [
   { action: 'build', label: 'ОБУЧЕНИЕ 2 / 3', objective: 'Поставьте добытый блок' },
   { action: 'web', label: 'ОБУЧЕНИЕ 3 / 3', objective: 'Зацепитесь за свой блок' },
 ];
-let tutorialStep = localStorage.getItem('cubic-rift-tutorial-complete') ? tutorialTasks.length : 0;
+let tutorialStep = campaignState.tutorialComplete ? tutorialTasks.length : 0;
 
 const legacyBest = JSON.parse(localStorage.getItem('cubic-rift-best') || 'null');
 if (legacyBest && !campaignState.best.queens) campaignState.best.queens = legacyBest;
@@ -1032,7 +1087,7 @@ function updateObjectivePanel() {
   }
   if (activeLevel.kind === 'rescue') {
     ui.objectiveLabel.textContent = rescued ? 'ВОЗВРАЩЕНИЕ' : 'СИГНАЛ БЕДСТВИЯ';
-    ui.objective.textContent = rescued ? 'Вернитесь к маяку' : 'Доберитесь до жителя';
+    ui.objective.textContent = rescued ? 'Вернитесь к порталу' : 'Доберитесь до жителя';
     ui.progress.style.width = rescued ? '65%' : `${14 + routeIndex * 12}%`;
     return;
   }
@@ -1049,6 +1104,8 @@ function advanceTutorial(action) {
   tutorialStep += 1;
   if (tutorialStep >= tutorialTasks.length) {
     localStorage.setItem('cubic-rift-tutorial-complete', '1');
+    campaignState.tutorialComplete = true;
+    saveCampaign();
     const boost = camera.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
     player.velocity.addScaledVector(boost, 8);
     player.velocity.y = Math.max(player.velocity.y, 5);
@@ -1084,8 +1141,6 @@ function saveMaterialInventory() {
 function resetBlockInventory() {
   blockInventory = {
     anchor: characterConfig.blocks,
-    spring: selectedCharacter === 'bastion' ? 3 : 2,
-    beacon: 1,
     brick: Math.max(0, Number(savedMaterials.brick) || 0),
     concrete: Math.max(0, Number(savedMaterials.concrete) || 0),
     metal: Math.max(0, Number(savedMaterials.metal) || 0),
@@ -1125,8 +1180,6 @@ function resetRun(lockPointer = !isTouchDevice) {
   fallCount = 0;
   routeIndex = 0;
   respawnPoint.set(...activeLevel.start);
-  activeBeacon = null;
-  springCooldown = 0;
   stopMining();
   citizen.position.set(...activeLevel.citizen);
   citizenBeacon.position.copy(citizen.position).add(new THREE.Vector3(0, .1, 0));
@@ -1136,7 +1189,7 @@ function resetRun(lockPointer = !isTouchDevice) {
   portal.visible = true;
   ui.result.hidden = true;
   ui.hud.classList.remove('muted');
-  tutorialStep = selectedLevelId === 'queens' && !localStorage.getItem('cubic-rift-tutorial-complete')
+  tutorialStep = selectedLevelId === 'queens' && !campaignState.tutorialComplete
     ? 0
     : tutorialTasks.length;
   updateObjectivePanel();
@@ -1277,7 +1330,7 @@ function placeAnchor() {
   anchorMesh.userData.blockType = selectedBlockType;
   const outlineMaterial = new THREE.LineBasicMaterial({
     color: 0xffffff,
-    transparent: blockTypes[selectedBlockType].device,
+    transparent: Boolean(blockTypes[selectedBlockType].device),
     opacity: blockTypes[selectedBlockType].device ? .22 : 1,
   });
   const edges = new THREE.LineSegments(
@@ -1300,10 +1353,6 @@ function removePlacedBlock(block, refund = true) {
   if (colliderIndex >= 0) colliders.splice(colliderIndex, 1);
   const placedIndex = placedBlocks.indexOf(block);
   if (placedIndex >= 0) placedBlocks.splice(placedIndex, 1);
-  if (activeBeacon === block) {
-    activeBeacon = null;
-    respawnPoint.set(-30, 1, 8);
-  }
   world.remove(block);
   block.geometry.dispose();
   block.children.forEach((child) => {
@@ -1498,14 +1547,14 @@ function updateBreakParticles(dt) {
 
 function rescueFromFall() {
   fallCount += 1;
-  elapsed += 3;
-  player.position.copy(activeBeacon ? respawnPoint : new THREE.Vector3(...activeLevel.start));
-  if (activeLevel.kind === 'rescue' && rescued && !activeBeacon) player.position.set(...activeLevel.citizen);
+  elapsed += activeLevel.fallPenalty || 3;
+  player.position.copy(respawnPoint);
+  if (activeLevel.kind === 'rescue' && rescued) player.position.set(...activeLevel.citizen);
   player.velocity.set(0, 2, 0);
   releaseWeb();
   ui.damage.classList.add('show');
   window.setTimeout(() => ui.damage.classList.remove('show'), 70);
-  showToast('Страховочная паутина: +3 секунды');
+  showToast(`Страховочная паутина: +${activeLevel.fallPenalty || 3} секунд`);
 }
 
 function updateAim() {
@@ -1523,20 +1572,6 @@ function updateAim() {
   ui.reticle.classList.toggle('breakable', Boolean(destructionTarget?.userData.destructible || destructionTarget?.userData.environmentObject));
 }
 
-function activatePlacedBlock(block, topY) {
-  if (block.userData.blockType === 'spring' && springCooldown <= 0) {
-    player.velocity.y = Math.max(player.velocity.y, 16);
-    player.grounded = false;
-    springCooldown = .4;
-    showToast('Пружина: вертикальный импульс');
-  }
-  if (block.userData.blockType === 'beacon' && activeBeacon !== block) {
-    activeBeacon = block;
-    respawnPoint.set(block.position.x, topY, block.position.z);
-    showToast('Маяк возврата активирован');
-  }
-}
-
 function resolveWorld(previous) {
   player.grounded = false;
   player.wallNormal.set(0, 0, 0);
@@ -1550,13 +1585,8 @@ function resolveWorld(previous) {
 
     if (previous.y >= box.max.y - .15 && player.position.y <= box.max.y + .15 && player.velocity.y <= 0) {
       player.position.y = box.max.y;
-      if (box.mesh.userData.blockType === 'spring') {
-        player.grounded = false;
-      } else {
-        player.velocity.y = 0;
-        player.grounded = true;
-      }
-      activatePlacedBlock(box.mesh, box.max.y);
+      player.velocity.y = 0;
+      player.grounded = true;
       continue;
     }
 
@@ -1572,13 +1602,11 @@ function resolveWorld(previous) {
     player.position[side.axis] = side.target;
     player.velocity[side.axis] = 0;
     player.wallNormal.set(side.axis === 'x' ? side.normal : 0, 0, side.axis === 'z' ? side.normal : 0);
-    activatePlacedBlock(box.mesh, box.max.y);
   }
 }
 
 function updatePlayer(dt) {
   player.previous.copy(player.position);
-  springCooldown = Math.max(0, springCooldown - dt);
   const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
   const right = new THREE.Vector3(-forward.z, 0, forward.x);
   const input = new THREE.Vector3();
@@ -1591,9 +1619,11 @@ function updatePlayer(dt) {
   if (input.lengthSq() > 1) input.normalize();
 
   const horizontalVelocity = new THREE.Vector3(player.velocity.x, 0, player.velocity.z);
-  const acceleration = (player.grounded ? 21 : 15) * characterConfig.speed;
+  const airAcceleration = webPoint ? 15 : 7.5;
+  const acceleration = (player.grounded ? 21 : airAcceleration) * characterConfig.speed;
   horizontalVelocity.addScaledVector(input, acceleration * dt);
-  const maxSpeed = (player.grounded ? 6 : 27) * characterConfig.speed;
+  const airSpeedLimit = webPoint ? 27 : Math.max(12, horizontalVelocity.length());
+  const maxSpeed = (player.grounded ? 6 : airSpeedLimit) * characterConfig.speed;
   if (horizontalVelocity.length() > maxSpeed) horizontalVelocity.setLength(maxSpeed);
   if (player.grounded && !input.lengthSq()) horizontalVelocity.multiplyScalar(Math.pow(.0008, dt));
   player.velocity.x = horizontalVelocity.x;
@@ -1618,7 +1648,8 @@ function updatePlayer(dt) {
   jumpQueued = false;
   ui.reticle.classList.toggle('wall-run', wallRunning);
 
-  player.velocity.y -= 25 * dt;
+  const gravity = player.velocity.y > 0 ? 27 : 28;
+  player.velocity.y = Math.max(player.velocity.y - gravity * dt, -24);
 
   if (webPoint) {
     const towardAnchor = webPoint.clone().sub(player.position);
@@ -1723,7 +1754,7 @@ function updateMission() {
   updateCheckpointRings();
   if (activeLevel.kind !== 'rescue') {
     const target = routeTargets[routeIndex];
-    if (target && player.position.distanceTo(target) < 4.5) {
+    if (target && player.position.distanceTo(target) < (activeLevel.checkpointRadius || 4.5)) {
       routeIndex += 1;
       updateObjectivePanel();
       if (routeIndex >= routeTargets.length) {
@@ -1749,7 +1780,7 @@ function updateMission() {
     citizen.visible = false;
     citizenBeacon.visible = false;
     updateObjectivePanel();
-    showToast('Житель спасён. Назад к маяку!');
+    showToast('Житель спасён. Назад к порталу!');
   }
   if (rescued && player.position.distanceTo(portal.position) < 3.2) {
     ui.progress.style.width = '100%';
@@ -1854,6 +1885,7 @@ function animate() {
   ui.timer.textContent = formatTime(elapsed);
   ui.speed.textContent = Math.round(new THREE.Vector3(player.velocity.x, 0, player.velocity.z).length() * 3.6);
   renderer.domElement.dataset.playerY = player.position.y.toFixed(3);
+  renderer.domElement.dataset.playerVy = player.velocity.y.toFixed(3);
   renderer.domElement.dataset.playerX = player.position.x.toFixed(3);
   renderer.domElement.dataset.playerZ = player.position.z.toFixed(3);
   renderer.render(scene, camera);
@@ -1876,12 +1908,10 @@ window.addEventListener('keydown', (event) => {
   if (event.code === 'KeyE' && !event.repeat) placeAnchor();
   if (event.code === 'KeyQ' && !event.repeat) startRemoving();
   if (event.code === 'Digit1') selectBlockType('anchor');
-  if (event.code === 'Digit2') selectBlockType('spring');
-  if (event.code === 'Digit3') selectBlockType('beacon');
-  if (event.code === 'Digit4') selectBlockType('brick');
-  if (event.code === 'Digit5') selectBlockType('concrete');
-  if (event.code === 'Digit6') selectBlockType('metal');
-  if (event.code === 'Digit7') selectBlockType('earth');
+  if (event.code === 'Digit2') selectBlockType('brick');
+  if (event.code === 'Digit3') selectBlockType('concrete');
+  if (event.code === 'Digit4') selectBlockType('metal');
+  if (event.code === 'Digit5') selectBlockType('earth');
   if (event.code === 'KeyR' && !event.repeat && started) resetRun(true);
 });
 window.addEventListener('keyup', (event) => {
